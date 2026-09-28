@@ -4,7 +4,7 @@
 
 // Initialize Supabase Client Credentials
 const SUPABASE_URL = 'https://kswadoginkuhckyzcpez.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Replace with your key from Supabase Settings -> API
+const SUPABASE_ANON_KEY = 'sb_publishable_J9VYGxgd8OMk8vE3xGGsFA_83MwmHEd';
 
 let _supabase = null;
 if (typeof supabase !== 'undefined' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
