@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Olyv - Enterprise Recruitment Analytics & ATS Dashboard</title>
+
+  <!-- Tailwind CSS CDN for instant styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            olyv: {
+              sidebar: '#0f172a',
+              body: '#f1f5f9',
+              primary: '#2563eb',
+              accent: '#38bdf8'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css?v=2.2">
+</head>
+<body class="bg-[#f1f5f9] text-slate-800 flex h-screen overflow-hidden antialiased">
+
+  <!-- ========================================================================= -->
+  <!-- 1. DARK SIDEBAR (#0f172a)                                                -->
+  <!-- ========================================================================= -->
+  <aside class="w-64 bg-[#0f172a] text-slate-200 flex flex-col flex-shrink-0 z-20 border-r border-slate-800">
+    <!-- Brand Logo & Header (Clickable Executive Cockpit) -->
+    <div class="h-16 px-5 flex items-center justify-between border-b border-slate-800/80 bg-slate-950/40 cursor-pointer hover:bg-slate-900/80 transition-colors"
+      onclick="window.OlyvApp.openExecutiveCockpitModal()" title="Click to open OLYV ATS Executive Cockpit & Recruiter Matrix">
+      <div class="flex items-center space-x-2.5">
+        <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-600 to-sky-400 flex items-center justify-center font-black text-white text-lg tracking-wider shadow-md">
+          O
+        </div>
+        <div>
+          <div class="flex items-center space-x-1.5">
+            <span class="font-extrabold text-white text-lg tracking-tight">OLYV</span>
+            <span class="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/30">ATS</span>
+          </div>
+          <div class="text-[10px] text-slate-400 font-medium tracking-wide flex items-center space-x-1">
+            <span>Executive Cockpit</span>
+            <span class="text-[10px] text-sky-400 font-bold">↗</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation List -->
+    <div class="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+      <!-- Main Overview Reset Item -->
+      <div>
+        <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-2">Scope</div>
+        <button id="sidebarOverviewBtn" onclick="window.OlyvApp.selectDepartment(null)"
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold bg-blue-600 text-white shadow-xs transition-colors duration-150">
+          <div class="flex items-center space-x-2.5">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <span>Company Overview</span>
+          </div>
+          <span id="overviewCountBadge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-700/80 text-blue-100">All</span>
+        </button>
+      </div>
+
+      <!-- Dynamically Extracted Departments List -->
+      <div>
+        <div class="flex items-center justify-between px-2 mb-2">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Departments</span>
+          <span class="text-[10px] text-slate-400 font-mono">Live DB</span>
+        </div>
+        <div id="sidebarDepartmentList" class="space-y-1">
+          <!-- Dynamically populated via app.js -->
+        </div>
+      </div>
+
+      <!-- Database Actions & Maintenance -->
+      <div class="pt-2 border-t border-slate-800/80">
+        <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-2">Local Database</div>
+        <div class="space-y-1">
+          <button type="button" onclick="window.OlyvDB.exportDatabaseJson(); window.OlyvApp.showToast('Database backup downloaded!', 'success');"
+            class="w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-xs font-semibold text-emerald-400 hover:text-emerald-300 hover:bg-slate-800 transition-colors">
+            <svg class="w-3.5 h-3.5 text-emerald-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            </svg>
+            <span>Backup Database JSON</span>
+          </button>
+          <button type="button" onclick="document.getElementById('restoreBackupInput').click()"
+            class="w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+            <svg class="w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <span>Restore from Backup</span>
+          </button>
+          <button type="button" onclick="window.OlyvApp.resetSeedData()"
+            class="w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-amber-300 hover:bg-slate-800 transition-colors">
+            <svg class="w-3.5 h-3.5 text-amber-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Reset Demo Seed Data</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- User / System Status Footer -->
+    <div class="p-3 border-t border-slate-800 bg-slate-950/50 flex items-center justify-between text-xs">
+      <div class="flex items-center space-x-2">
+        <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+        <span class="text-slate-300 font-medium text-[11px]">Real-time State Engine</span>
+      </div>
+      <span class="text-[10px] text-slate-400 font-mono">v1.2</span>
+    </div>
+  </aside>
+
+  <!-- ========================================================================= -->
+  <!-- 2. MAIN DASHBOARD CONTAINER (#f1f5f9)                                     -->
+  <!-- ========================================================================= -->
+  <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#f1f5f9]">
+
+    <!-- Top Navigation Header -->
+    <header class="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between flex-shrink-0 shadow-2xs z-10">
+      <div>
+        <h1 id="headerTitle" class="text-xl font-extrabold text-slate-900 tracking-tight">Company Overview Dashboard</h1>
+        <p id="headerSubtitle" class="text-xs text-slate-500 font-medium">Real-time hiring intelligence and enterprise talent acquisition pipeline</p>
+      </div>
+
+      <!-- Action Buttons Bar & Sync Controls -->
+      <div class="flex items-center space-x-2.5">
+        <!-- Fast Backup Export Button -->
+        <button type="button" onclick="window.OlyvDB.exportDatabaseJson(); window.OlyvApp.showToast('Database backup downloaded!', 'success');" title="Export Full Database Backup (0ms JSON)"
+          class="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 text-xs font-medium transition-colors cursor-pointer">
+          <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+          </svg>
+          <span class="hidden sm:inline">Backup</span>
+        </button>
+
+        <!-- Hidden input for JSON restore -->
+        <input type="file" id="restoreBackupInput" accept=".json" class="hidden" onchange="window.OlyvApp.handleBackupRestore(event)">
+        <button type="button" onclick="document.getElementById('restoreBackupInput').click()" title="Restore from JSON Backup"
+          class="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+        </button>
+
+        <!-- "+ Add Positions" (Visible ONLY on Company Overview) -->
+        <button id="headerAddPositionBtn" onclick="window.OlyvModals.openAddPositionModal()"
+          class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs hover:shadow transition-all duration-150">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>Add Positions</span>
+        </button>
+
+        <!-- "+ Add Candidate" (Visible ONLY when viewing a specific Department) -->
+        <button id="headerAddCandidateBtn" onclick="window.OlyvModals.openAddCandidateModal(window.OlyvApp.currentDepartment)"
+          class="hidden inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs hover:shadow transition-all duration-150">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+          </svg>
+          <span>Add Candidate</span>
+        </button>
+
+        <!-- "⬆ Bulk Upload Candidates" (Always visible) -->
+        <button id="headerBulkUploadBtn" onclick="window.OlyvModals.openBulkUploadModal()"
+          class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs hover:shadow-xs transition-all duration-150">
+          <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          <span>Bulk Upload</span>
+        </button>
+
+        <!-- Cloud Sync Status Badge & Recruiter Auth Button -->
+        <div class="h-6 w-px bg-slate-200"></div>
+        <div id="cloudSyncStatusBadge" class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 border border-slate-200 text-slate-600">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-1.5"></span>
+          <span>Cloud Sync Active</span>
+        </div>
+        <button id="cloudAuthToggleBtn" onclick="window.OlyvModals.openRecruiterAuthModal()"
+          class="inline-flex items-center space-x-1 px-3 py-2 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors cursor-pointer">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span id="cloudUserDisplay">Recruiter Access</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Scrollable Content Body -->
+    <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+
+      <!-- ===================================================================== -->
+      <!-- 3. TOP KPI CARDS (Real-Time Calculated Metrics)                        -->
+      <!-- ===================================================================== -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+
+        <!-- KPI 1: Total Positions Count (Clickable Drilldown) -->
+        <div onclick="window.OlyvApp.openKpiPositionsDrilldown('ALL')" title="Click to view all current open positions and open dates"
+          class="kpi-card bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col justify-between cursor-pointer hover:border-blue-400 group">
+          <div class="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span class="group-hover:text-blue-600 font-semibold transition-colors">Total Positions ↗</span>
+            <div class="p-1.5 rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+          </div>
+          <div class="mt-2">
+            <div id="kpiTotalPositions" class="text-2xl font-extrabold text-slate-900 tracking-tight">0</div>
+            <div class="text-[11px] text-slate-400 mt-0.5 flex items-center justify-between">
+              <span>Active Job Requisitions</span>
+              <span class="text-blue-600 text-[10px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">View List</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI 2: Position Types Breakdown (Clickable Drilldown) -->
+        <div onclick="window.OlyvApp.openKpiPositionsDrilldown('TYPES')" title="Click to view open positions breakdown by type"
+          class="kpi-card bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col justify-between cursor-pointer hover:border-indigo-400 group">
+          <div class="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span class="group-hover:text-indigo-600 font-semibold transition-colors">Position Types ↗</span>
+            <div class="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+          </div>
+          <div class="mt-2 space-y-1">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-600 font-medium">New Roles:</span>
+              <span id="kpiNewPositions" class="font-bold text-blue-600 font-mono">0</span>
+            </div>
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-600 font-medium">Replacement:</span>
+              <span id="kpiReplPositions" class="font-bold text-purple-600 font-mono">0</span>
+            </div>
+            <!-- Visual proportion bar -->
+            <div class="w-full bg-slate-100 rounded-full h-1.5 flex overflow-hidden mt-1.5">
+              <div id="kpiTypeBarNew" class="bg-blue-600 h-full" style="width: 50%"></div>
+              <div id="kpiTypeBarRepl" class="bg-purple-500 h-full" style="width: 50%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI 3: Offers Released Count (Clickable Drilldown) -->
+        <div onclick="window.OlyvApp.switchTab('tab-offers')" title="Click to view Offers & Expected DOJ Tracker"
+          class="kpi-card bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col justify-between cursor-pointer hover:border-teal-400 group">
+          <div class="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span class="group-hover:text-teal-600 font-semibold transition-colors">Offers Released ↗</span>
+            <div class="p-1.5 rounded-lg bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-colors">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <div class="mt-2">
+            <div id="kpiOffersReleased" class="text-2xl font-extrabold text-teal-600 tracking-tight">0</div>
+            <div class="text-[11px] text-slate-400 mt-0.5 flex items-center justify-between">
+              <span>Offered & Preboarding</span>
+              <span class="text-teal-600 text-[10px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">View Offers</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI 4: Total Joined Count (Clickable Drilldown) -->
+        <div onclick="window.OlyvApp.openKpiJoinedDrilldown()" title="Click to view joined candidates in Offers tab"
+          class="kpi-card bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col justify-between cursor-pointer hover:border-emerald-400 group">
+          <div class="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span class="group-hover:text-emerald-600 font-semibold transition-colors">Total Joined ↗</span>
+            <div class="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          </div>
+          <div class="mt-2">
+            <div id="kpiTotalJoined" class="text-2xl font-extrabold text-emerald-600 tracking-tight">0</div>
+            <div class="text-[11px] text-slate-400 mt-0.5 flex items-center justify-between">
+              <span>Successfully Onboarded</span>
+              <span class="text-emerald-600 text-[10px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">View Joinees</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI 5: Overall Avg TAT (Clickable Drilldown) -->
+        <div onclick="window.OlyvApp.openKpiPositionsDrilldown('TAT')" title="Click to view requisition TAT performance"
+          class="kpi-card bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col justify-between cursor-pointer hover:border-amber-400 group">
+          <div class="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span class="group-hover:text-amber-600 font-semibold transition-colors">Overall Avg TAT ↗</span>
+            <div class="p-1.5 rounded-lg bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <div class="mt-2">
+            <div id="kpiAvgTat" class="text-2xl font-extrabold text-slate-900 tracking-tight">0d</div>
+            <div id="kpiTatBadge" class="text-[11px] font-medium text-slate-500 mt-0.5">Target: 30 days</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================== -->
+      <!-- 4. DASHBOARD TABS NAVIGATION                                          -->
+      <!-- ===================================================================== -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+        <div class="flex items-center justify-between border-b border-slate-200 px-6 bg-slate-50/50">
+          <nav class="flex space-x-4 -mb-px">
+            <button data-tab-target="tab-analytics"
+              class="px-4 py-3 text-sm font-semibold text-blue-600 border-b-2 border-blue-600 flex items-center space-x-2 transition-colors">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+              </svg>
+              <span>Analytics & Overview</span>
+            </button>
+            <button data-tab-target="tab-positions"
+              class="px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300 border-b-2 border-transparent flex items-center space-x-2 transition-colors">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              <span>Open Positions Log</span>
+            </button>
+            <button data-tab-target="tab-pipeline"
+              class="px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300 border-b-2 border-transparent flex items-center space-x-2 transition-colors">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>Candidate Pipeline Drilldown</span>
+            </button>
+            <button data-tab-target="tab-calendar"
+              class="px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300 border-b-2 border-transparent flex items-center space-x-2 transition-colors">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span class="flex items-center space-x-1.5">
+                <span>Interview Calendar</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              </span>
+            </button>
+            <button data-tab-target="tab-offers"
+              class="px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300 border-b-2 border-transparent flex items-center space-x-2 transition-colors">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+              </svg>
+              <span>Offers & DOJ Tracker</span>
+            </button>
+          </nav>
+
+          <!-- Quick global search bar -->
+          <div class="relative w-64">
+            <input type="text" id="globalSearchInput" placeholder="Search candidate, role..."
+              class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 placeholder-slate-400 transition-colors">
+            <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- =================================================================== -->
+        <!-- TAB 1 CONTENT: Analytics & Overview                                 -->
+        <!-- =================================================================== -->
+        <div id="tab-analytics" class="tab-pane p-6 space-y-6">
+          <!-- Top Row: TAT Trend (Line) + Source Mix (Doughnut) -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- TAT Trend Chart (Spans 2 cols) -->
+            <div class="lg:col-span-2 bg-slate-50/50 p-5 rounded-xl border border-slate-200/80">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-sm font-bold text-slate-900 tracking-tight">Hiring Speed (TAT Trend)</h3>
+                  <p class="text-xs text-slate-500">Days from requisition open to candidate offer vs 30d target</p>
+                </div>
+
+                <!-- Timeframe selector buttons (7, 15, 30, 60, 90) -->
+                <div class="flex items-center space-x-1 bg-slate-200/70 p-1 rounded-lg text-xs font-semibold">
+                  <button data-tat-days="7" class="px-2.5 py-1 rounded-md text-slate-600 bg-white hover:bg-slate-100 transition-colors">7d</button>
+                  <button data-tat-days="15" class="px-2.5 py-1 rounded-md text-slate-600 bg-white hover:bg-slate-100 transition-colors">15d</button>
+                  <button data-tat-days="30" class="px-2.5 py-1 rounded-md bg-blue-600 text-white shadow-xs transition-colors">30d</button>
+                  <button data-tat-days="60" class="px-2.5 py-1 rounded-md text-slate-600 bg-white hover:bg-slate-100 transition-colors">60d</button>
+                  <button data-tat-days="90" class="px-2.5 py-1 rounded-md text-slate-600 bg-white hover:bg-slate-100 transition-colors">90d</button>
+                </div>
+              </div>
+
+              <!-- Canvas Container -->
+              <div class="h-64 w-full">
+                <canvas id="tatTrendChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Source Mix Distribution (Doughnut) -->
+            <div class="bg-slate-50/50 p-5 rounded-xl border border-slate-200/80 flex flex-col">
+              <div class="mb-2">
+                <h3 class="text-sm font-bold text-slate-900 tracking-tight">Candidate Source Mix</h3>
+                <p class="text-xs text-slate-500">Distribution across recruitment channels</p>
+              </div>
+              <div class="h-64 w-full flex items-center justify-center relative">
+                <canvas id="sourceMixChart"></canvas>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Active Candidate Pipeline Funnel (Interactive Stage Drilldown) -->
+          <div class="bg-slate-50/50 p-5 rounded-xl border border-slate-200/80">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 tracking-tight">Active Recruitment Pipeline Funnel</h3>
+                <p class="text-xs text-slate-500">Live candidate volume by stage • Click any stage bar to filter the Candidate Pipeline</p>
+              </div>
+              <span class="text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                Interactive Drilldown
+              </span>
+            </div>
+            <div class="h-64 w-full">
+              <canvas id="pipelineFunnelChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Custom Milestone TAT Calculator & Analyzer Tool -->
+          <div class="bg-gradient-to-r from-blue-900 to-indigo-950 p-5 rounded-xl border border-blue-800 text-white shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-4 pb-3 border-b border-blue-800/60">
+              <div>
+                <div class="flex items-center space-x-2">
+                  <span class="px-2 py-0.5 rounded bg-blue-500/30 text-blue-300 text-[10px] font-bold uppercase tracking-wider border border-blue-400/30">Hiring Speed Analyzer</span>
+                  <h3 class="text-sm font-bold tracking-tight text-white">Custom Milestone & Stage TAT Drilldown</h3>
+                </div>
+                <p class="text-xs text-blue-200/80 mt-0.5">Select a requisition and compare turnaround time between specific milestones (e.g. Shortlisting to Offer, R1 to R2, or Date Opened to Closed)</p>
+              </div>
+
+              <!-- Controls -->
+              <div class="flex flex-wrap items-center gap-2 text-xs">
+                <!-- Position Dropdown -->
+                <select id="tatAnalysisPositionSelect" onchange="window.OlyvApp.handleMilestoneTatChange()"
+                  class="px-3 py-1.5 rounded-lg bg-slate-900/90 text-white border border-blue-500/50 font-medium focus:ring-2 focus:ring-blue-400">
+                  <option value="ALL">All Positions (Corporate Benchmark)</option>
+                </select>
+
+                <!-- From Stage -->
+                <div class="flex items-center space-x-1.5 bg-slate-900/60 px-2.5 py-1 rounded-lg border border-blue-700/50">
+                  <span class="text-blue-300 text-[11px]">From:</span>
+                  <select id="tatAnalysisFromStage" onchange="window.OlyvApp.handleMilestoneTatChange()"
+                    class="bg-transparent text-white font-semibold focus:outline-none">
+                    <option value="dateOpened" class="bg-slate-900">Position Date Opened</option>
+                    <option value="Shortlisted" selected class="bg-slate-900">Shortlisted</option>
+                    <option value="Round 1" class="bg-slate-900">Round 1 (Screening)</option>
+                    <option value="Round 2" class="bg-slate-900">Round 2 (Core)</option>
+                    <option value="Round 3" class="bg-slate-900">Round 3 (Leadership)</option>
+                    <option value="HR Round" class="bg-slate-900">HR Round</option>
+                  </select>
+                </div>
+
+                <!-- Arrow -->
+                <span class="text-blue-400 font-bold">➔</span>
+
+                <!-- To Stage -->
+                <div class="flex items-center space-x-1.5 bg-slate-900/60 px-2.5 py-1 rounded-lg border border-blue-700/50">
+                  <span class="text-blue-300 text-[11px]">To:</span>
+                  <select id="tatAnalysisToStage" onchange="window.OlyvApp.handleMilestoneTatChange()"
+                    class="bg-transparent text-white font-semibold focus:outline-none">
+                    <option value="Round 1" class="bg-slate-900">Round 1 (Screening)</option>
+                    <option value="Round 2" class="bg-slate-900">Round 2 (Core)</option>
+                    <option value="Round 3" class="bg-slate-900">Round 3 (Leadership)</option>
+                    <option value="HR Round" class="bg-slate-900">HR Round</option>
+                    <option value="Offered" selected class="bg-slate-900">Offered</option>
+                    <option value="Joined" class="bg-slate-900">Joined (Closed Requisition)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Milestone TAT Result Metrics Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div class="bg-slate-900/60 p-3 rounded-lg border border-blue-700/40">
+                <span class="text-[11px] text-blue-300 block font-medium">Average Stage TAT</span>
+                <div class="flex items-baseline space-x-1.5 mt-1">
+                  <span id="milestoneTatAvg" class="text-2xl font-black text-white font-mono">18.5</span>
+                  <span class="text-xs text-blue-300 font-medium">days</span>
+                </div>
+                <span id="milestoneTatBadge" class="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  On Track (&lt;30d)
+                </span>
+              </div>
+
+              <div class="bg-slate-900/60 p-3 rounded-lg border border-blue-700/40">
+                <span class="text-[11px] text-blue-300 block font-medium">Fastest Conversion</span>
+                <div class="flex items-baseline space-x-1.5 mt-1">
+                  <span id="milestoneTatMin" class="text-2xl font-black text-emerald-400 font-mono">6</span>
+                  <span class="text-xs text-blue-300 font-medium">days</span>
+                </div>
+                <span class="text-[10px] text-slate-400 mt-1 block">Best candidate velocity</span>
+              </div>
+
+              <div class="bg-slate-900/60 p-3 rounded-lg border border-blue-700/40">
+                <span class="text-[11px] text-blue-300 block font-medium">Longest Progression</span>
+                <div class="flex items-baseline space-x-1.5 mt-1">
+                  <span id="milestoneTatMax" class="text-2xl font-black text-amber-400 font-mono">28</span>
+                  <span class="text-xs text-blue-300 font-medium">days</span>
+                </div>
+                <span class="text-[10px] text-slate-400 mt-1 block">Maximum stage lag</span>
+              </div>
+
+              <div class="bg-slate-900/60 p-3 rounded-lg border border-blue-700/40">
+                <span class="text-[11px] text-blue-300 block font-medium">Qualified Samples</span>
+                <div class="flex items-baseline space-x-1.5 mt-1">
+                  <span id="milestoneTatSamples" class="text-2xl font-black text-sky-400 font-mono">12</span>
+                  <span class="text-xs text-blue-300 font-medium">profiles</span>
+                </div>
+                <span class="text-[10px] text-slate-400 mt-1 block">Evaluated across pipeline</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Row: Stage Pass/Fail Funnel (Bar) + Offer Outcomes & Decline Intelligence (Doughnut) -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- Stage-by-Stage Selection vs Rejection Analytics -->
+            <div class="bg-slate-50/50 p-5 rounded-xl border border-slate-200/80 flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <h3 class="text-sm font-bold text-slate-900 tracking-tight">Stage Pass vs Drop-off Analytics</h3>
+                  <span class="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    Selection & Rejection Velocity
+                  </span>
+                </div>
+                <p class="text-xs text-slate-500 mb-3">Compare candidates cleared (Green) vs rejected (Red) across each evaluation milestone</p>
+              </div>
+              <div class="h-64 w-full">
+                <canvas id="stagePassFailChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Offer Intelligence & Decline Reason Analytics -->
+            <div class="bg-slate-50/50 p-5 rounded-xl border border-slate-200/80 flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <h3 class="text-sm font-bold text-slate-900 tracking-tight">Offer Acceptance & Decline Intelligence</h3>
+                  <div class="flex items-center space-x-1">
+                    <span id="offerAcceptanceRateBadge" class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      80% Accepted
+                    </span>
+                    <span id="offerDeclineRateBadge" class="text-[10px] font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                      20% Declined
+                    </span>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-500 mb-2">Offered candidate outcomes and root-cause breakdown of candidate declined offers</p>
+              </div>
+
+              <!-- Metrics Mini Bar -->
+              <div class="grid grid-cols-3 gap-2 my-2 text-center text-xs">
+                <div class="bg-white p-2 rounded-lg border border-slate-200">
+                  <span class="text-[10px] text-slate-400 block">Total Offers</span>
+                  <span id="offerTotalOfferedCount" class="font-bold text-slate-800 text-sm font-mono">0</span>
+                </div>
+                <div class="bg-white p-2 rounded-lg border border-slate-200">
+                  <span class="text-[10px] text-slate-400 block">Joined & Preboarding</span>
+                  <span id="offerTotalJoinedCount" class="font-bold text-emerald-700 text-sm font-mono">0</span>
+                </div>
+                <div class="bg-white p-2 rounded-lg border border-slate-200">
+                  <span class="text-[10px] text-slate-400 block">Declined / Dropped</span>
+                  <span id="offerTotalDeclinedCount" class="font-bold text-red-600 text-sm font-mono">0</span>
+                </div>
+              </div>
+
+              <div class="h-56 w-full flex items-center justify-center relative">
+                <canvas id="offerDeclineChart"></canvas>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- =================================================================== -->
+        <!-- TAB 2 CONTENT: Open Positions Log                                   -->
+        <!-- =================================================================== -->
+        <div id="tab-positions" class="tab-pane hidden p-6 space-y-4">
+          <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <div>
+              <span class="text-xs font-semibold text-slate-700">Requisitions Master Log</span>
+              <p class="text-[11px] text-slate-400">Track requisition turnaround time against the 30-day corporate benchmark</p>
+            </div>
+            <div id="positionsResultCount" class="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-200">
+              0 Requisitions
+            </div>
+          </div>
+
+          <!-- Positions Table -->
+          <div class="overflow-x-auto border border-slate-200 rounded-lg shadow-2xs bg-white">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100/80 text-[11px] font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200">
+                  <th class="px-4 py-3">Position ID</th>
+                  <th class="px-4 py-3">Job Title</th>
+                  <th class="px-4 py-3">Department</th>
+                  <th class="px-4 py-3">Requisition Type</th>
+                  <th class="px-4 py-3">Date Opened</th>
+                  <th class="px-4 py-3">TAT Performance Status</th>
+                  <th class="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="positionsTableBody" class="divide-y divide-slate-100">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- =================================================================== -->
+        <!-- TAB 3 CONTENT: Candidate Pipeline Drilldown                         -->
+        <!-- =================================================================== -->
+        <div id="tab-pipeline" class="tab-pane hidden p-6 space-y-4">
+          <!-- Filter & View Mode Controls Toolbar -->
+          <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <div class="flex flex-wrap items-center gap-3">
+              <!-- Department selector (if overview) -->
+              <div class="flex items-center space-x-1.5 text-xs">
+                <span class="font-medium text-slate-600">Dept:</span>
+                <select id="tableDeptFilter" class="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white text-slate-700">
+                  <option value="ALL">All Departments</option>
+                </select>
+              </div>
+
+              <!-- Stage Filter (applicable for table view) -->
+              <div id="stageFilterContainer" class="flex items-center space-x-1.5 text-xs">
+                <span class="font-medium text-slate-600">Stage:</span>
+                <select id="tableStageFilter" class="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white text-slate-700">
+                  <option value="ALL">All Stages</option>
+                  <option value="Shortlisted">Shortlisted</option>
+                  <option value="Round 1">Round 1</option>
+                  <option value="Round 2">Round 2</option>
+                  <option value="Round 3">Round 3</option>
+                  <option value="HR Round">HR Round</option>
+                  <option value="Preboarding">Preboarding</option>
+                  <option value="Offered">Offered</option>
+                  <option value="Joined">Joined</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+
+              <!-- Source Filter -->
+              <div class="flex items-center space-x-1.5 text-xs">
+                <span class="font-medium text-slate-600">Source:</span>
+                <select id="tableSourceFilter" class="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white text-slate-700">
+                  <option value="ALL">All Sources</option>
+                  <option value="LinkedIn">LinkedIn</option>
+                  <option value="Referral">Referral</option>
+                  <option value="Naukri">Naukri</option>
+                  <option value="Agency">Agency</option>
+                  <option value="Direct">Direct</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- View Switcher & Result Count -->
+            <div class="flex items-center space-x-3">
+              <div id="candidateResultCount" class="text-xs font-mono text-slate-500 font-semibold">
+                Loading candidates...
+              </div>
+
+              <!-- View Switcher: Kanban Board vs Table -->
+              <div class="inline-flex p-1 bg-slate-200/80 rounded-lg text-xs font-semibold">
+                <button type="button" id="pipelineViewBoardBtn" onclick="window.OlyvApp.setPipelineViewMode('board')"
+                  class="px-2.5 py-1 rounded-md bg-white text-blue-700 shadow-2xs flex items-center space-x-1.5 transition-all">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                  </svg>
+                  <span>Drag & Drop Board</span>
+                </button>
+                <button type="button" id="pipelineViewTableBtn" onclick="window.OlyvApp.setPipelineViewMode('table')"
+                  class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-800 flex items-center space-x-1.5 transition-all">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  </svg>
+                  <span>Table View</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 1. KANBAN DRAG & DROP BOARD VIEW (DEFAULT) -->
+          <div id="pipelineKanbanView" class="overflow-x-auto pb-4">
+            <div id="kanbanBoardColumns" class="flex items-start space-x-3 min-w-[1450px]">
+              <!-- Populated dynamically: Shortlisting, R1, R2, R3, HR Round, Preboarding, Offer -->
+            </div>
+          </div>
+
+          <!-- 2. TRADITIONAL DATA TABLE VIEW (HIDDEN IN BOARD MODE) -->
+          <div id="pipelineTableView" class="hidden overflow-x-auto border border-slate-200 rounded-lg shadow-2xs bg-white">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100/80 text-[11px] font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200">
+                  <th class="px-4 py-3">Candidate Name & ID</th>
+                  <th class="px-4 py-3">Role & Department</th>
+                  <th class="px-4 py-3">Stage / Status</th>
+                  <th class="px-4 py-3">Source</th>
+                  <th class="px-4 py-3">Recruiter</th>
+                  <th class="px-4 py-3">Latest Remarks</th>
+                  <th class="px-4 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="candidateTableBody" class="divide-y divide-slate-100">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- =================================================================== -->
+        <!-- TAB: Weekly Interview Calendar & Panel Load Tracker                 -->
+        <!-- =================================================================== -->
+        <div id="tab-calendar" class="tab-pane hidden p-6 space-y-6">
+          <!-- Calendar Header & Actions -->
+          <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider border border-emerald-200">Weekly Schedule</span>
+                <h3 class="text-sm font-bold text-slate-900 tracking-tight">Interview Panel Member Calendar & Load Matrix</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Real-time schedule of interview panels, blocked hours, available slots, and panel conversion (Selected vs Rejected)</p>
+            </div>
+
+            <div class="flex items-center space-x-3 text-xs">
+              <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span><span class="text-slate-600">Confirmed Interview</span></span>
+              <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span><span class="text-slate-600">Free / Available</span></span>
+              <button onclick="window.OlyvApp.renderInterviewCalendar()" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium">
+                ↻ Refresh Calendar
+              </button>
+            </div>
+          </div>
+
+          <!-- Weekly Days Schedule Grid (Mon - Sat) -->
+          <div class="space-y-2">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600">Weekly Scheduled Interviews (7-Day View)</h4>
+            <div id="weeklyCalendarGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+              <!-- Dynamically populated days -->
+            </div>
+          </div>
+
+          <!-- Panel Members Load & Conversion Leaderboard -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
+            <div class="px-5 py-3.5 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
+              <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800">Interview Panel Members Performance & Availability Scorecard</h4>
+                <p class="text-[11px] text-slate-500">Total interviews taken, pass-through decisions (Selected vs Rejected), and upcoming commitments</p>
+              </div>
+              <span class="text-xs font-mono font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">Active Panel Members</span>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-slate-100/70 text-[11px] font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200">
+                    <th class="px-4 py-3">Panel Member & Role</th>
+                    <th class="px-4 py-3">Department</th>
+                    <th class="px-4 py-3">Upcoming This Week</th>
+                    <th class="px-4 py-3">Interviews Taken (Total)</th>
+                    <th class="px-4 py-3">Candidates Selected</th>
+                    <th class="px-4 py-3">Candidates Rejected</th>
+                    <th class="px-4 py-3">Pass / Select Ratio</th>
+                    <th class="px-4 py-3 text-right">Calendar Status</th>
+                  </tr>
+                </thead>
+                <tbody id="panelMembersTableBody" class="divide-y divide-slate-100">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- =================================================================== -->
+        <!-- TAB 3 CONTENT: Offers & DOJ Tracker                                 -->
+        <!-- =================================================================== -->
+        <div id="tab-offers" class="tab-pane hidden p-6 space-y-5">
+          <!-- Offers Metric Highlights -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-blue-50/70 border border-blue-200/80 p-4 rounded-xl flex items-center justify-between">
+              <div>
+                <div class="text-xs font-semibold text-blue-800">Total Offered Pipeline CTC</div>
+                <div id="offersTotalCtc" class="text-xl font-black text-blue-900 mt-1">₹0</div>
+              </div>
+              <div class="p-2 bg-blue-600 text-white rounded-lg text-sm font-bold">₹</div>
+            </div>
+            <div class="bg-teal-50/70 border border-teal-200/80 p-4 rounded-xl flex items-center justify-between">
+              <div>
+                <div class="text-xs font-semibold text-teal-800">Average Offered CTC</div>
+                <div id="offersAvgCtc" class="text-xl font-black text-teal-900 mt-1">₹0</div>
+              </div>
+              <div class="p-2 bg-teal-600 text-white rounded-lg text-xs font-bold">AVG</div>
+            </div>
+            <!-- Clickable Joining Timeline Card -->
+            <div onclick="window.OlyvApp.openUpcomingJoinersModal()" title="Click to view all upcoming joiners details"
+              class="bg-emerald-50/70 border border-emerald-200/80 hover:border-emerald-500 hover:bg-emerald-50 p-4 rounded-xl flex items-center justify-between cursor-pointer transition-all group shadow-2xs">
+              <div>
+                <div class="text-xs font-semibold text-emerald-800 flex items-center space-x-1.5">
+                  <span>Joining Timeline</span>
+                  <span class="text-[10px] text-emerald-600 group-hover:underline font-bold">View Who's Joining ↗</span>
+                </div>
+                <div id="offersUpcomingJoinees" class="text-xl font-black text-emerald-900 mt-1">0 upcoming</div>
+              </div>
+              <div class="p-2 bg-emerald-600 text-white rounded-lg text-xs font-bold group-hover:scale-110 transition-transform">DOJ ↗</div>
+            </div>
+          </div>
+
+          <!-- Offers Table -->
+          <div class="overflow-x-auto border border-slate-200 rounded-lg shadow-2xs bg-white">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100/80 text-[11px] font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200">
+                  <th class="px-4 py-3">Candidate</th>
+                  <th class="px-4 py-3">Designation & Dept</th>
+                  <th class="px-4 py-3">Offered CTC</th>
+                  <th class="px-4 py-3">Offer Release Date</th>
+                  <th class="px-4 py-3">Expected DOJ & Countdown</th>
+                  <th class="px-4 py-3">Status</th>
+                  <th class="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="offersTableBody" class="divide-y divide-slate-100">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- 5. INTERACTIVE MODALS & WORKFLOWS                                         -->
+  <!-- ========================================================================= -->
+
+  <!-- ------------------------------------------------------------------------- -->
+  <!-- MODAL 1: ADD POSITION MODAL                                               -->
+  <!-- ------------------------------------------------------------------------- -->
+  <div id="addPositionModal" class="modal-overlay hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-content bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm">+</div>
+          <div>
+            <h3 class="font-bold text-base leading-tight">Create Job Requisitions</h3>
+            <p class="text-xs text-slate-400">Add new or replacement requisitions with auto ID generation</p>
+          </div>
+        </div>
+        <button onclick="window.OlyvModals.closeAll()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <form id="addPositionForm" onsubmit="window.OlyvModals.handleAddPositionSubmit(event)" class="p-6 space-y-4 text-xs">
+        <!-- Department Selection & Custom creation -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Department</label>
+          <select id="posDepartmentSelect" required
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white font-medium">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+
+        <!-- Dynamic New Department Inputs (Hidden by default) -->
+        <div id="newDeptContainer" class="hidden p-3 bg-blue-50/60 rounded-lg border border-blue-200 space-y-2">
+          <div class="grid grid-cols-3 gap-2">
+            <div class="col-span-2">
+              <label class="block font-semibold text-blue-900 text-[11px] mb-1">New Department Name</label>
+              <input type="text" id="posCustomDept" placeholder="e.g., Compliance"
+                class="w-full px-2.5 py-1.5 rounded border border-blue-300 bg-white text-slate-800 text-xs">
+            </div>
+            <div>
+              <label class="block font-semibold text-blue-900 text-[11px] mb-1">Prefix Code</label>
+              <input type="text" id="posCustomCode" placeholder="CMP" maxlength="4"
+                class="w-full px-2.5 py-1.5 rounded border border-blue-300 bg-white text-slate-800 text-xs uppercase font-mono">
+            </div>
+          </div>
+          <p class="text-[10px] text-blue-700">Code will be automatically converted to uppercase prefix for Position IDs.</p>
+        </div>
+
+        <!-- Job Title -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Job Title</label>
+          <input type="text" id="posJobTitle" required placeholder="e.g., SDE 1 (Frontend), Financial Analyst"
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white">
+        </div>
+
+        <!-- Type (New vs Replacement) with Live Dual Counters -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block font-semibold text-slate-700">Requisition Type</label>
+            <div class="text-[11px] font-mono text-slate-500 space-x-2">
+              <span>Current Total: <strong id="modalPosNewCount" class="text-blue-600">0 New</strong> • <strong id="modalPosReplCount" class="text-purple-600">0 Replacement</strong></span>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="flex items-center justify-between p-2.5 rounded-lg border border-blue-200 bg-blue-50/40 hover:bg-blue-50 cursor-pointer">
+              <div class="flex items-center space-x-2">
+                <input type="radio" name="posType" value="New" checked class="text-blue-600">
+                <span class="font-semibold text-slate-800">New Headcount</span>
+              </div>
+              <span id="modalPosNewBadge" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-mono">0 active</span>
+            </label>
+            <label class="flex items-center justify-between p-2.5 rounded-lg border border-purple-200 bg-purple-50/40 hover:bg-purple-50 cursor-pointer">
+              <div class="flex items-center space-x-2">
+                <input type="radio" name="posType" value="Replacement" class="text-purple-600">
+                <span class="font-semibold text-slate-800">Replacement</span>
+              </div>
+              <span id="modalPosReplBadge" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 font-mono">0 active</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Quantity & Target TAT -->
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">No. of Positions</label>
+            <input type="number" id="posCount" value="1" min="1" max="50" required
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-mono">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Target TAT (Days)</label>
+            <input type="number" id="posTargetTat" value="30" min="5" max="180" required
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-mono">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Date Opened</label>
+            <input type="date" id="posDateOpened" required
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-mono text-[11px]">
+          </div>
+        </div>
+
+        <!-- Position ID Preview Box -->
+        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
+          <span class="text-slate-500 font-medium text-[11px]">Generated Requisition ID(s):</span>
+          <div id="posIdPreview" class="text-right text-xs">
+            <span class="font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-200">ENG-SDE1-001</span>
+          </div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="pt-3 border-t border-slate-200 flex items-center justify-end space-x-2">
+          <button type="button" onclick="window.OlyvModals.closeAll()"
+            class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-medium">Cancel</button>
+          <button type="submit"
+            class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-xs">
+            Create Position(s)
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------------------- -->
+  <!-- MODAL 2: ADD CANDIDATE MODAL                                              -->
+  <!-- ------------------------------------------------------------------------- -->
+  <div id="addCandidateModal" class="modal-overlay hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-content bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold text-sm">+</div>
+          <div>
+            <h3 class="font-bold text-base leading-tight">Add New Candidate</h3>
+            <p class="text-xs text-slate-400">Enter candidate details and map to open requisitions</p>
+          </div>
+        </div>
+        <button onclick="window.OlyvModals.closeAll()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <form id="addCandidateForm" onsubmit="window.OlyvModals.handleAddCandidateSubmit(event)" class="p-6 space-y-4 text-xs">
+        <!-- Name & Email -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Full Name</label>
+            <input type="text" id="candName" required placeholder="e.g., Ananya Deshmukh"
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Email Address</label>
+            <input type="email" id="candEmail" required placeholder="ananya@example.com"
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white">
+          </div>
+        </div>
+
+        <!-- Phone & Application Date -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Mobile Number</label>
+            <input type="tel" id="candMobile" placeholder="+91 98765 43210"
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white font-mono">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Application Date</label>
+            <input type="date" id="candAppDate" required
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-mono">
+          </div>
+        </div>
+
+        <!-- Department & Job Title -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Department</label>
+            <select id="candDepartmentSelect" required
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Target Job Title</label>
+            <select id="candJobTitleSelect" required
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white">
+              <!-- Dynamically populated based on dept positions -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Custom Job Title input if selected -->
+        <div id="candCustomJobContainer" class="hidden">
+          <label class="block font-semibold text-slate-700 mb-1">Specify Custom Job Title</label>
+          <input type="text" id="candCustomJob" placeholder="e.g., Staff Security Engineer"
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white">
+        </div>
+
+        <!-- Multi-tier Sourcing Channel -->
+        <div class="space-y-2 p-3 bg-slate-50/80 rounded-xl border border-slate-200">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Source Channel Category <span class="text-red-500">*</span></label>
+              <select id="candSourceCategory" required onchange="window.OlyvModals.handleSourceCategoryChange()"
+                class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white font-medium">
+                <option value="Career Portal">1. Career Portal / Website</option>
+                <option value="Internal Recruiter" selected>2. Internal Recruiter</option>
+                <option value="External Recruiter">3. External Recruiter / Vendor</option>
+                <option value="Referral">4. Referral</option>
+                <option value="Job Portal">5. Job Portal</option>
+              </select>
+            </div>
+            <div>
+              <label id="candSourceSubLabel" class="block font-semibold text-slate-700 mb-1">Select Internal Recruiter <span class="text-red-500">*</span></label>
+              <!-- Container 1: Internal Recruiter Dropdown -->
+              <select id="candSubInternal" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white font-medium">
+                <option value="Ananya Sharma">Ananya Sharma (Tech Talent Lead)</option>
+                <option value="Vikram Malhotra">Vikram Malhotra (Finance & Ops Recruiter)</option>
+                <option value="Priya Nair">Priya Nair (Product & Design Recruiter)</option>
+                <option value="Sneha Iyer">Sneha Iyer (Collections & Risk Lead)</option>
+                <option value="Rohan Verma">Rohan Verma (Campus & Early Careers)</option>
+                <option value="__CUSTOM_REC__">+ Enter Custom Recruiter...</option>
+              </select>
+              <!-- Container 2: External Vendor / Agency Dropdown -->
+              <select id="candSubVendor" class="hidden w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white font-medium">
+                <option value="Michael Page">Michael Page International</option>
+                <option value="ABC Consultants">ABC Consultants</option>
+                <option value="TeamLease">TeamLease Digital</option>
+                <option value="Korn Ferry">Korn Ferry</option>
+                <option value="Randstad">Randstad India</option>
+                <option value="__CUSTOM_VEN__">+ Enter Custom Agency / Vendor...</option>
+              </select>
+              <!-- Container 3: Job Portal Dropdown -->
+              <select id="candSubPortal" class="hidden w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white font-medium">
+                <option value="LinkedIn">LinkedIn Recruiter</option>
+                <option value="Naukri">Naukri.com</option>
+                <option value="Indeed">Indeed</option>
+                <option value="IIMJobs">IIMJobs / Hirist</option>
+                <option value="Foundit">Foundit / Monster</option>
+                <option value="__CUSTOM_PORTAL__">+ Enter Custom Job Board...</option>
+              </select>
+              <!-- Container 4: Referral Details Input -->
+              <input type="text" id="candSubReferral" placeholder="Referred by (Employee Name / ID)"
+                class="hidden w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white">
+              <!-- Container 5: Career Portal note -->
+              <div id="candSubCareerPortal" class="hidden text-xs text-slate-500 py-2">
+                Applied directly via Olyv Career Portal
+              </div>
+            </div>
+          </div>
+          <!-- Custom detail fallback input (if custom recruiter/agency chosen) -->
+          <div id="candCustomSourceContainer" class="hidden">
+            <input type="text" id="candCustomSourceInput" placeholder="Specify custom recruiter, agency, or portal name"
+              class="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-slate-800 bg-white text-xs">
+          </div>
+        </div>
+
+        <!-- Candidate Compensation & Notice Period Details -->
+        <div class="p-3 bg-blue-50/60 rounded-xl border border-blue-200">
+          <div class="text-[11px] font-bold text-blue-900 uppercase tracking-wider mb-2">Compensation & Notice Period</div>
+          <div class="grid grid-cols-3 gap-2.5">
+            <div>
+              <label class="block font-semibold text-slate-700 text-[11px] mb-1">Current CTC</label>
+              <input type="text" id="candCurrentCtc" placeholder="e.g. ₹18 LPA"
+                class="w-full px-2.5 py-1.5 rounded border border-slate-300 bg-white text-slate-800 font-mono text-xs">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 text-[11px] mb-1">Expected CTC (ECTC)</label>
+              <input type="text" id="candEctc" placeholder="e.g. ₹24 LPA"
+                class="w-full px-2.5 py-1.5 rounded border border-slate-300 bg-white text-slate-800 font-mono text-xs">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 text-[11px] mb-1">Notice Period (Days)</label>
+              <input type="text" id="candNoticePeriod" placeholder="e.g. 30 Days"
+                class="w-full px-2.5 py-1.5 rounded border border-slate-300 bg-white text-slate-800 font-mono text-xs">
+            </div>
+          </div>
+        </div>
+
+        <!-- Initial Stage -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Initial Stage</label>
+          <select id="candInitialStage" required
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white font-medium">
+            <option value="Shortlisted" selected>Shortlisted</option>
+            <option value="Round 1">Round 1 (Technical Screening)</option>
+            <option value="Round 2">Round 2 (Core Evaluation)</option>
+            <option value="Round 3">Round 3 (Leadership)</option>
+            <option value="HR Round">HR Round</option>
+            <option value="Preboarding">Preboarding</option>
+            <option value="Offered">Offer Release</option>
+          </select>
+        </div>
+
+        <!-- Remarks -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Initial Remarks / Notes</label>
+          <textarea id="candInitialRemarks" rows="2" placeholder="Candidate background, resume highlights, initial impressions..."
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white"></textarea>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="pt-3 border-t border-slate-200 flex items-center justify-end space-x-2">
+          <button type="button" onclick="window.OlyvModals.closeAll()"
+            class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-medium">Cancel</button>
+          <button type="submit"
+            class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs">
+            Add Candidate
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------------------- -->
+  <!-- MODAL 3: CANDIDATE STAGE PROGRESSION MODAL                                -->
+  <!-- ------------------------------------------------------------------------- -->
+  <div id="stageProgressionModal" class="modal-overlay hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-content bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-base">➔</div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h3 id="stageModalCandName" class="font-bold text-base leading-tight">Candidate Name</h3>
+              <span id="stageModalCurrentBadge" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">Stage</span>
+            </div>
+            <p id="stageModalCandRole" class="text-xs text-slate-400 mt-0.5">Role • Dept</p>
+          </div>
+        </div>
+        <button onclick="window.OlyvModals.closeAll()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <!-- Scrollable Form Body -->
+      <form id="stageProgressionForm" onsubmit="window.OlyvModals.handleStageProgressionSubmit(event)" class="p-6 space-y-4 text-xs overflow-y-auto flex-1">
+        <!-- Requisition / ID badge -->
+        <div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200 text-slate-600">
+          <span>Candidate ID: <strong id="stageModalCandId" class="font-mono text-slate-900">CAND-1000</strong></span>
+          <span class="text-[11px] text-slate-400">Step Progression Workflow</span>
+        </div>
+
+        <!-- Transition Stage Dropdown -->
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">Select New Stage</label>
+          <select id="stageProgressionSelect" required
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-900 font-semibold bg-white text-sm">
+            <option value="Shortlisted">Shortlisted</option>
+            <option value="Round 1">Round 1 (Technical Screening)</option>
+            <option value="Round 2">Round 2 (Core System / Deep Dive)</option>
+            <option value="Round 3">Round 3 (Leadership / Culture)</option>
+            <option value="HR Round">HR Round (Fitment & Comp)</option>
+            <option value="Preboarding">Preboarding</option>
+            <option value="Offered">Offered</option>
+            <option value="Joined">Joined (Hired)</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+
+        <!-- Stage Decision (Selected, Pending, Rejected) -->
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1.5">Stage Decision</label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="flex items-center justify-center space-x-1.5 p-2 rounded-lg border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 cursor-pointer">
+              <input type="radio" name="stageDecision" value="Selected" checked class="text-emerald-600">
+              <span class="font-semibold text-emerald-800">Selected</span>
+            </label>
+            <label class="flex items-center justify-center space-x-1.5 p-2 rounded-lg border border-amber-200 bg-amber-50/50 hover:bg-amber-50 cursor-pointer">
+              <input type="radio" name="stageDecision" value="Pending" class="text-amber-600">
+              <span class="font-semibold text-amber-800">Pending</span>
+            </label>
+            <label class="flex items-center justify-center space-x-1.5 p-2 rounded-lg border border-red-200 bg-red-50/50 hover:bg-red-50 cursor-pointer">
+              <input type="radio" name="stageDecision" value="Rejected" class="text-red-600">
+              <span class="font-semibold text-red-800">Rejected</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Interview Schedule Date -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Interview / Action Date</label>
+            <input type="date" id="stageInterviewDate"
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-mono">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Interviewer / Feedback By</label>
+            <input type="text" id="stageInterviewer" placeholder="e.g., Lead Architect"
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800">
+          </div>
+        </div>
+
+        <!-- DYNAMIC REVEAL: Detailed Compensation & Joining Terms (Revealed if Preboarding or Offered or Joined) -->
+        <div id="stageOfferDetailsSection" class="hidden p-4 bg-teal-50/90 rounded-xl border border-teal-200 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-1.5 text-teal-900 font-bold">
+              <svg class="w-4 h-4 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Compensation Breakdown & Joining Terms</span>
+            </div>
+            <div class="text-[11px] font-bold text-teal-800 bg-white px-2 py-0.5 rounded border border-teal-300">
+              Total CTC: <span id="stageCalculatedTotalCtc" class="font-mono text-teal-900 font-black">₹0 LPA</span>
+            </div>
+          </div>
+
+          <!-- Multi-component compensation inputs -->
+          <div class="grid grid-cols-3 gap-2.5">
+            <div>
+              <label class="block font-semibold text-teal-900 text-[11px] mb-1">Fixed Base CTC (LPA) <span class="text-red-500">*</span></label>
+              <input type="number" step="0.1" id="stageFixedCtc" placeholder="e.g. 24" oninput="window.OlyvModals.recalculateStageCtc()"
+                class="w-full px-2.5 py-1.5 rounded border border-teal-300 bg-white text-slate-800 font-semibold font-mono text-xs">
+            </div>
+            <div>
+              <label class="block font-semibold text-teal-900 text-[11px] mb-1">Variable / Bonus (LPA)</label>
+              <input type="number" step="0.1" id="stageVariableCtc" placeholder="e.g. 4" oninput="window.OlyvModals.recalculateStageCtc()"
+                class="w-full px-2.5 py-1.5 rounded border border-teal-300 bg-white text-slate-800 font-mono text-xs">
+            </div>
+            <div>
+              <label class="block font-semibold text-teal-900 text-[11px] mb-1">ESOPs Value (Lakhs)</label>
+              <input type="number" step="0.1" id="stageEsops" placeholder="e.g. 10" oninput="window.OlyvModals.recalculateStageCtc()"
+                class="w-full px-2.5 py-1.5 rounded border border-teal-300 bg-white text-slate-800 font-mono text-xs">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label class="block font-semibold text-teal-900 text-[11px] mb-1">Joining Bonus (Lakhs)</label>
+              <input type="number" step="0.1" id="stageJoiningBonus" placeholder="e.g. 2" oninput="window.OlyvModals.recalculateStageCtc()"
+                class="w-full px-2.5 py-1.5 rounded border border-teal-300 bg-white text-slate-800 font-mono text-xs">
+            </div>
+            <div>
+              <label class="block font-semibold text-teal-900 text-[11px] mb-1">Retention Bonus (Lakhs)</label>
+              <input type="number" step="0.1" id="stageRetentionBonus" placeholder="e.g. 3" oninput="window.OlyvModals.recalculateStageCtc()"
+                class="w-full px-2.5 py-1.5 rounded border border-teal-300 bg-white text-slate-800 font-mono text-xs">
+            </div>
+          </div>
+
+          <!-- Hidden input for standard formatted ctc string -->
+          <input type="hidden" id="stageCtc">
+
+          <!-- Key dates -->
+          <div class="grid grid-cols-2 gap-2.5 pt-1 border-t border-teal-200/80">
+            <div>
+              <label class="block font-semibold text-teal-900 text-[11px] mb-1">Offer Release Date</label>
+              <input type="date" id="stageOfferDate"
+                class="w-full px-2.5 py-1.5 rounded border border-teal-300 bg-white text-slate-800 font-mono text-xs">
+            </div>
+            <div>
+              <label class="block font-semibold text-teal-900 text-[11px] mb-1">Expected DOJ</label>
+              <input type="date" id="stageDoj"
+                class="w-full px-2.5 py-1.5 rounded border border-teal-300 bg-white text-slate-800 font-mono text-xs">
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes & Remarks Textarea -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Stage Evaluation Notes & Remarks</label>
+          <textarea id="stageNotes" rows="2" placeholder="Detail interview score, technical feedback, candidate questions, salary discussion..."
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white"></textarea>
+        </div>
+
+        <!-- Prior Stage History & Audit Log -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-2">Stage Progression & Audit History</label>
+          <div id="stageRemarksHistory" class="max-h-36 overflow-y-auto bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="pt-3 border-t border-slate-200 flex items-center justify-end space-x-2">
+          <button type="button" onclick="window.OlyvModals.closeAll()"
+            class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-medium">Cancel</button>
+          <button type="submit"
+            class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-xs">
+            Confirm & Save Stage
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------------------- -->
+  <!-- MODAL 4: BULK UPLOAD MODAL                                                -->
+  <!-- ------------------------------------------------------------------------- -->
+  <div id="bulkUploadModal" class="modal-overlay hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-content bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">⬆</div>
+          <div>
+            <h3 class="font-bold text-base leading-tight">Bulk Upload Candidates</h3>
+            <p class="text-xs text-slate-400">Copy & paste TSV / CSV text directly from Excel or Google Sheets</p>
+          </div>
+        </div>
+        <button onclick="window.OlyvModals.closeAll()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-4 text-xs overflow-y-auto flex-1">
+        <div class="flex items-center justify-between text-[11px] text-slate-500">
+          <span>Expected columns: <strong class="text-slate-700">Name, Email, Mobile, Department, Job Title, Source, Recruiter, Status</strong></span>
+          <button type="button" onclick="window.OlyvModals.insertSampleBulkData()"
+            class="text-blue-600 hover:underline font-semibold">Paste Sample Template</button>
+        </div>
+
+        <!-- Raw Textarea for TSV / CSV -->
+        <div>
+          <textarea id="bulkUploadTextarea" rows="6" placeholder="Paste spreadsheet rows here (Tab-separated or Comma-separated)..."
+            class="w-full px-3 py-2 font-mono text-xs rounded-lg border border-slate-300 text-slate-800 bg-white placeholder-slate-400"></textarea>
+        </div>
+
+        <!-- Live Parsed Preview Container -->
+        <div id="bulkPreviewContainer" class="hidden space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-800 text-xs">Parsed Records Preview</span>
+            <span id="bulkCountBadge" class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+              0 candidates parsed
+            </span>
+          </div>
+
+          <div class="overflow-x-auto border border-slate-200 rounded-lg max-h-48 overflow-y-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100 text-[10px] font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200">
+                  <th class="px-3 py-1.5">Name</th>
+                  <th class="px-3 py-1.5">Email</th>
+                  <th class="px-3 py-1.5">Dept</th>
+                  <th class="px-3 py-1.5">Job Title</th>
+                  <th class="px-3 py-1.5">Source</th>
+                  <th class="px-3 py-1.5">Validation</th>
+                </tr>
+              </thead>
+              <tbody id="bulkPreviewBody" class="divide-y divide-slate-100">
+                <!-- Preview items inserted here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="pt-3 border-t border-slate-200 flex items-center justify-end space-x-2">
+          <button type="button" onclick="window.OlyvModals.closeAll()"
+            class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-medium">Cancel</button>
+          <button type="button" id="bulkImportBtn" disabled onclick="window.OlyvModals.handleBulkImportSubmit()"
+            class="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold shadow-xs">
+            Import Valid Records
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------------------- -->
+  <!-- MODAL 6: UPDATE DATE OF JOINING (DOJ) & AUDIT TRAIL MODAL                 -->
+  <!-- ------------------------------------------------------------------------- -->
+  <div id="updateDojModal" class="modal-overlay hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-content bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-7 h-7 rounded-lg bg-teal-600 flex items-center justify-center text-white font-bold text-sm">📅</div>
+          <div>
+            <h3 class="font-bold text-base leading-tight">Update Date of Joining (DOJ)</h3>
+            <p class="text-xs text-slate-400">Record early joining or postponement with mandatory reason & audit trail</p>
+          </div>
+        </div>
+        <button onclick="window.OlyvModals.closeAll()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <form id="updateDojForm" onsubmit="window.OlyvModals.handleUpdateDojSubmit(event)" class="p-6 space-y-4 text-xs overflow-y-auto flex-1">
+        <!-- Candidate Overview Box -->
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+          <div>
+            <div id="dojModalCandName" class="font-bold text-slate-900 text-sm">Candidate Name</div>
+            <div id="dojModalCandRole" class="text-slate-500 text-xs">Role • Department</div>
+          </div>
+          <div class="text-right">
+            <span class="text-[11px] text-slate-400 block">Current DOJ</span>
+            <span id="dojModalCurrentDoj" class="font-mono font-bold text-slate-800 text-xs bg-white px-2 py-0.5 rounded border border-slate-200">2026-09-01</span>
+          </div>
+        </div>
+
+        <!-- New Date Input -->
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">New Date of Joining <span class="text-red-500">*</span></label>
+          <input type="date" id="dojModalNewDate" required onchange="window.OlyvModals.detectDojEarlyLateDifference()"
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-mono text-sm bg-white">
+          <div id="dojDeltaBadge" class="mt-1.5 text-xs font-semibold"></div>
+        </div>
+
+        <!-- Reason Category -->
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">Reason for Rescheduling / Early Joining <span class="text-red-500">*</span></label>
+          <select id="dojReasonCategory" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white">
+            <option value="Early Joining - Notice Buyout">🟢 Early Joining (Notice Period Buyout by Olyv)</option>
+            <option value="Early Joining - Early Relieving">🟢 Early Joining (Previous Employer Relieved Early)</option>
+            <option value="Delayed - Notice Extension">🟡 Serving Extended Notice Period</option>
+            <option value="Delayed - Medical / Personal">🟡 Personal / Family / Medical Reason</option>
+            <option value="Delayed - Relocation / Housing">🟡 Relocation / Housing Arrangements</option>
+            <option value="Delayed - Documentation Pending">🟡 Background Verification / Degree Pending</option>
+            <option value="Other">⚪ Other Specific Reason</option>
+          </select>
+        </div>
+
+        <!-- Freeform Detailed Note -->
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">Additional Remarks / Documentation Notes</label>
+          <textarea id="dojCustomNotes" rows="2" placeholder="e.g. Candidate agreed to join 10 days early after approving notice buyout of 15 days..."
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 bg-white"></textarea>
+        </div>
+
+        <!-- Audit History Timeline -->
+        <div>
+          <label class="block font-bold text-slate-800 text-[11px] mb-2 uppercase tracking-wider">DOJ Change History & Audit Trail</label>
+          <div id="dojModalHistoryList" class="p-3 bg-slate-50 rounded-xl border border-slate-200 max-h-40 overflow-y-auto space-y-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="pt-3 border-t border-slate-200 flex items-center justify-end space-x-2">
+          <button type="button" onclick="window.OlyvModals.closeAll()"
+            class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-medium">Cancel</button>
+          <button type="submit"
+            class="px-5 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-semibold shadow-xs">
+            Save DOJ & Record Audit
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------------------- -->
+  <!-- MODAL 7: QUICK OFFER MODAL (WHEN DRAGGED TO OFFER IN KANBAN)              -->
+  <!-- ------------------------------------------------------------------------- -->
+  <div id="quickOfferModal" class="modal-overlay hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-content bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="px-6 py-4 bg-teal-800 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-7 h-7 rounded-lg bg-teal-600 flex items-center justify-center text-white font-bold text-sm">🎉</div>
+          <div>
+            <h3 class="font-bold text-base leading-tight">Release Offer</h3>
+            <p class="text-xs text-teal-200">Record package breakdown and expected joining date</p>
+          </div>
+        </div>
+        <button onclick="window.OlyvModals.closeAll()" class="text-teal-200 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <form id="quickOfferForm" onsubmit="window.OlyvModals.handleQuickOfferSubmit(event)" class="p-6 space-y-3.5 text-xs max-h-[80vh] overflow-y-auto">
+        <div class="p-3 bg-teal-50 rounded-xl border border-teal-200 flex items-center justify-between">
+          <div>
+            <div id="quickOfferCandName" class="font-bold text-teal-950 text-sm">Candidate Name</div>
+            <div id="quickOfferCandRole" class="text-teal-700 text-xs">Role • Department</div>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] text-teal-600 font-semibold block">Total Package</span>
+            <span id="quickOfferCalculatedTotal" class="font-mono text-sm font-black text-teal-900 bg-white px-2 py-0.5 rounded border border-teal-300">₹0 LPA</span>
+          </div>
+        </div>
+
+        <!-- Compensation Components -->
+        <div class="grid grid-cols-3 gap-2.5">
+          <div>
+            <label class="block font-semibold text-slate-700 text-[11px] mb-1">Fixed Base (LPA) <span class="text-red-500">*</span></label>
+            <input type="number" step="0.1" id="quickOfferFixed" placeholder="e.g. 18" required oninput="window.OlyvModals.recalculateQuickOfferCtc()"
+              class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-800 font-mono text-xs bg-white font-semibold">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 text-[11px] mb-1">Variable Pay (LPA)</label>
+            <input type="number" step="0.1" id="quickOfferVariable" placeholder="e.g. 3" oninput="window.OlyvModals.recalculateQuickOfferCtc()"
+              class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-800 font-mono text-xs bg-white">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 text-[11px] mb-1">ESOPs (Lakhs)</label>
+            <input type="number" step="0.1" id="quickOfferEsops" placeholder="e.g. 5" oninput="window.OlyvModals.recalculateQuickOfferCtc()"
+              class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-800 font-mono text-xs bg-white">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block font-semibold text-slate-700 text-[11px] mb-1">Joining Bonus (Lakhs)</label>
+            <input type="number" step="0.1" id="quickOfferJoiningBonus" placeholder="e.g. 1.5" oninput="window.OlyvModals.recalculateQuickOfferCtc()"
+              class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-800 font-mono text-xs bg-white">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 text-[11px] mb-1">Retention Bonus (Lakhs)</label>
+            <input type="number" step="0.1" id="quickOfferRetentionBonus" placeholder="e.g. 2" oninput="window.OlyvModals.recalculateQuickOfferCtc()"
+              class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-800 font-mono text-xs bg-white">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-1 border-t border-slate-200">
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">Offer Release Date</label>
+            <input type="date" id="quickOfferDate" required
+              class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-800 font-mono text-xs bg-white">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-800 mb-1">Expected DOJ <span class="text-red-500">*</span></label>
+            <input type="date" id="quickOfferDoj" required
+              class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-800 font-mono text-xs bg-white">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">Offer Notes / Hiring Manager Feedback</label>
+          <textarea id="quickOfferNotes" rows="2" placeholder="e.g. Cleared final leadership round with strong fit..."
+            class="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-slate-800 bg-white"></textarea>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 flex items-center justify-end space-x-2">
+          <button type="button" onclick="window.OlyvModals.closeAll()"
+            class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-medium">Cancel</button>
+          <button type="submit"
+            class="px-5 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-semibold shadow-xs">
+            Confirm & Add to Offers
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------------------- -->
+  <!-- MODAL 8: ACTIVE OPEN POSITIONS DRILLDOWN MODAL (TRIGGERED BY KPI CARDS)   -->
+  <!-- ------------------------------------------------------------------------- -->
+  <div id="kpiPositionsModal" class="modal-overlay hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-content bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+      <!-- Header -->
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm">📋</div>
+          <div>
+            <h3 id="kpiPositionsModalTitle" class="font-bold text-base leading-tight">Current Open Positions</h3>
+            <p id="kpiPositionsModalSubtitle" class="text-xs text-slate-400">All active requisitions, open dates, and turnaround performance</p>
+          </div>
+        </div>
+        <button onclick="window.OlyvModals.closeAll()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <!-- Table Body -->
+      <div class="p-6 overflow-y-auto flex-1">
+        <div class="overflow-x-auto border border-slate-200 rounded-lg">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200">
+                <th class="px-3 py-2.5">Position ID</th>
+                <th class="px-3 py-2.5">Job Title</th>
+                <th class="px-3 py-2.5">Department</th>
+                <th class="px-3 py-2.5">Type</th>
+                <th class="px-3 py-2.5">Date Opened</th>
+                <th class="px-3 py-2.5">Days Open & TAT</th>
+                <th class="px-3 py-2.5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="kpiPositionsModalBody" class="divide-y divide-slate-100">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs">
+        <span id="kpiPositionsModalCount" class="text-slate-500 font-medium">0 Positions</span>
+        <button onclick="window.OlyvModals.closeAll(); window.OlyvApp.switchTab('tab-positions');"
+          class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+          Open in Full Positions Log ➔
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------------------- -->
+  <!-- MODAL 8: UPCOMING JOINERS MODAL (TRIGGERED FROM JOINING TIMELINE CARD)    -->
+  <!-- ------------------------------------------------------------------------- -->
+  <div id="upcomingJoinersModal" class="modal-overlay hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-content bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="px-6 py-4 bg-gradient-to-r from-emerald-800 to-teal-900 text-white flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold text-sm">📅</div>
+          <div>
+            <h3 class="font-bold text-base leading-tight">Upcoming Joining Pipeline</h3>
+            <p class="text-xs text-emerald-200">Candidates with released offers awaiting date of joining (DOJ)</p>
+          </div>
+        </div>
+        <button onclick="window.OlyvModals.closeAll()" class="text-emerald-200 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <div class="p-6 overflow-y-auto flex-1 text-xs">
+        <div class="overflow-x-auto border border-slate-200 rounded-lg">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-100 text-[11px] font-bold text-slate-600 uppercase border-b border-slate-200">
+                <th class="px-4 py-2.5">Candidate</th>
+                <th class="px-4 py-2.5">Designation & Dept</th>
+                <th class="px-4 py-2.5">Offered CTC</th>
+                <th class="px-4 py-2.5">Expected DOJ</th>
+                <th class="px-4 py-2.5">Recruiter</th>
+                <th class="px-4 py-2.5 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="upcomingJoinersModalBody" class="divide-y divide-slate-100">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs">
+        <span id="upcomingJoinersCount" class="text-slate-600 font-semibold">0 upcoming joiners</span>
+        <button onclick="window.OlyvModals.closeAll(); window.OlyvApp.switchTab('tab-offers');"
+          class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
+          View in Offers & DOJ Tracker ➔
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------------------- -->
+  <!-- MODAL 9: OLYV ATS EXECUTIVE WELCOME COCKPIT & RECRUITER MATRIX            -->
+  <!-- ------------------------------------------------------------------------- -->
+  <div id="executiveCockpitModal" class="modal-overlay hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-content bg-white rounded-2xl max-w-4xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
+      <!-- Cockpit Header -->
+      <div class="px-6 py-5 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white flex items-center justify-between flex-shrink-0 border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+          <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-blue-600 to-sky-400 flex items-center justify-center font-black text-white text-xl shadow-lg">
+            O
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h2 class="text-lg font-black tracking-tight">OLYV ATS Executive Hiring Cockpit</h2>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/30 text-blue-300 border border-blue-400/40">Enterprise v2.0</span>
+            </div>
+            <p class="text-xs text-slate-300 mt-0.5">Welcome! Real-time strategic talent intelligence, upcoming onboarding, and recruiter leaderboard</p>
+          </div>
+        </div>
+        <button onclick="window.OlyvModals.closeAll()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <!-- Cockpit Body -->
+      <div class="p-6 overflow-y-auto flex-1 space-y-6 text-xs">
+        <!-- Top Executive Highlights -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl">
+            <span class="text-[11px] font-bold text-blue-800 uppercase tracking-wider block">Active Open Roles</span>
+            <div id="cockpitTotalPositions" class="text-2xl font-black text-blue-950 mt-1 font-mono">0</div>
+            <span class="text-[10px] text-blue-600 block mt-0.5">Across all departments</span>
+          </div>
+
+          <div class="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl">
+            <span class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">Upcoming Joinees</span>
+            <div id="cockpitUpcomingJoinees" class="text-2xl font-black text-emerald-950 mt-1 font-mono">0</div>
+            <span class="text-[10px] text-emerald-600 block mt-0.5">Joining in next 30 days</span>
+          </div>
+
+          <div class="p-3.5 bg-purple-50/70 border border-purple-200 rounded-xl">
+            <span class="text-[11px] font-bold text-purple-800 uppercase tracking-wider block">Pipeline Candidates</span>
+            <div id="cockpitActiveCandidates" class="text-2xl font-black text-purple-950 mt-1 font-mono">0</div>
+            <span class="text-[10px] text-purple-600 block mt-0.5">Under evaluation</span>
+          </div>
+
+          <div class="p-3.5 bg-teal-50/70 border border-teal-200 rounded-xl">
+            <span class="text-[11px] font-bold text-teal-800 uppercase tracking-wider block">Avg Requisition TAT</span>
+            <div id="cockpitAvgTat" class="text-2xl font-black text-teal-950 mt-1 font-mono">24d</div>
+            <span class="text-[10px] text-teal-600 block mt-0.5">vs 30d corporate SLA</span>
+          </div>
+        </div>
+
+        <!-- Section 1: Active Hiring Funnel Summary -->
+        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Company-Wide Recruitment Pipeline Funnel</h4>
+            <span class="text-[11px] text-blue-600 font-semibold cursor-pointer hover:underline" onclick="window.OlyvModals.closeAll(); window.OlyvApp.switchTab('tab-pipeline');">
+              Open Full Kanban Board ➔
+            </span>
+          </div>
+          <div id="cockpitFunnelPills" class="flex flex-wrap gap-2 pt-1">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Section 2: Recruiter Performance Matrix -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Recruiter Performance & Productivity Matrix</h4>
+              <p class="text-[11px] text-slate-500">Candidates sourced, interviews coordinated, offers rolled out, and hiring velocity per recruiter</p>
+            </div>
+            <span class="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-1 rounded">Live Leaderboard</span>
+          </div>
+
+          <div class="overflow-x-auto border border-slate-200 rounded-xl">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-100 text-[11px] font-bold text-slate-700 uppercase border-b border-slate-200">
+                  <th class="px-4 py-2.5">Recruiter Name</th>
+                  <th class="px-4 py-2.5">Candidates Sourced</th>
+                  <th class="px-4 py-2.5">Interviews Coordinated</th>
+                  <th class="px-4 py-2.5">Offers Released</th>
+                  <th class="px-4 py-2.5">Joined (Hired)</th>
+                  <th class="px-4 py-2.5">Offer Drops</th>
+                  <th class="px-4 py-2.5">Avg TAT</th>
+                  <th class="px-4 py-2.5 text-right">Conversion %</th>
+                </tr>
+              </thead>
+              <tbody id="cockpitRecruiterTableBody" class="divide-y divide-slate-100 bg-white">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section 3: Upcoming Joiners Spotlight -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Immediate Joinees (Next 30 Days)</h4>
+            <span class="text-[11px] text-emerald-700 font-semibold cursor-pointer hover:underline" onclick="window.OlyvModals.closeAll(); window.OlyvApp.switchTab('tab-offers');">
+              Manage in Offers &amp; DOJ Tracker ➔
+            </span>
+          </div>
+          <div id="cockpitUpcomingJoinersList" class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Cockpit Footer -->
+      <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs">
+        <span class="text-slate-500 font-medium">Logged in as Executive Admin • Full Access</span>
+        <button onclick="window.OlyvModals.closeAll()"
+          class="px-5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold">
+          Close Cockpit
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 10. RECRUITER AUTH & TEAM ACCESS MODAL                                    -->
+  <!-- ========================================================================= -->
+  <div id="recruiterAuthModal" class="modal-overlay fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-scale-in">
+      <div class="px-6 py-4 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="h-8 w-8 rounded-lg bg-indigo-500/30 flex items-center justify-center font-bold text-indigo-300">
+            👥
+          </div>
+          <div>
+            <h3 id="authModalTitle" class="text-base font-bold">Recruiter Cloud Sign-In</h3>
+            <p class="text-xs text-indigo-200">Connect to Olyv Cloud for live team sync</p>
+          </div>
+        </div>
+        <button onclick="window.OlyvModals.closeAll()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+      </div>
+
+      <form id="recruiterAuthForm" data-mode="login" onsubmit="window.OlyvModals.handleRecruiterAuthSubmit(event)" class="p-6 space-y-4">
+        <div id="authErrorMessage" class="hidden p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-medium"></div>
+
+        <div id="authRegisterFields" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Recruiter Full Name</label>
+            <input type="text" id="authDisplayName" placeholder="e.g. Priyanshu Sharma"
+              class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Role / Permissions</label>
+            <select id="authRole" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option value="Recruiter">Recruiter (Manage Requisitions & Candidates)</option>
+              <option value="Lead Recruiter">Lead Recruiter (Full Pipeline & Reporting)</option>
+              <option value="Hiring Manager">Hiring Manager (Review & Stage Progression)</option>
+              <option value="Admin">Admin (Full System & Team Access)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Work Email</label>
+          <input type="email" id="authEmail" required placeholder="recruiter@olyv.com"
+            class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+          <input type="password" id="authPassword" required minlength="6" placeholder="••••••••"
+            class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          <p class="text-[10px] text-slate-400 mt-1">Minimum 6 characters</p>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" id="authSubmitBtn"
+            class="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-colors">
+            Sign In
+          </button>
+        </div>
+
+        <div class="text-center pt-2 border-t border-slate-100">
+          <p id="authSwitchText" class="text-xs text-slate-600">
+            Need to add a recruiter? 
+            <a href="#" onclick="window.OlyvModals.switchAuthMode('register'); return false;" class="text-indigo-600 font-semibold hover:underline">
+              Register recruiter account
+            </a>
+          </p>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Global Toast Notification Element -->
+  <div id="globalToast"
+    class="fixed bottom-5 right-5 z-50 transform translate-y-4 opacity-0 pointer-events-none transition-all duration-200 ease-out bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-800 flex items-center text-xs">
+    <div id="toastIcon" class="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold mr-2.5">✓</div>
+    <span id="toastMessage" class="font-medium">Action completed successfully.</span>
+  </div>
+
+  <!-- Firebase CDN SDKs (Compatibility Build for zero-bundler instant execution) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-service.js?v=2.2"></script>
+
+  <!-- Application Scripts in Dependency Order (with cache buster) -->
+  <script src="js/seed.js?v=2.2"></script>
+  <script src="js/db.js?v=2.2"></script>
+  <script src="js/charts.js?v=2.2"></script>
+  <script src="js/modals.js?v=2.2"></script>
+  <script src="js/app.js?v=2.2"></script>
+</body>
+</html>
